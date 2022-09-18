@@ -41,7 +41,7 @@ def push_recent_data_to_redis():
                         "time_stamp": time_stamp, "sts": sts, "speed": speed})
 
 
-def get_recent_data_redis(device_fk_id):
+def get_recent_device_redis(device_fk_id):
     inner_fields = dict()
     final = dict()
     count = 0
@@ -61,11 +61,63 @@ def get_recent_data_redis(device_fk_id):
     return final
 
 
-@app.route('/carnot_poc')
-def run_api():
+def get_recent_location_redis(device_fk_id):
+    inner_fields = dict()
+    final = dict()
+    count = 0
+    inner_field_keys = ["device_fk_id","latitude","longitude","time_stamp","sts","speed"]
+
+    found_device_fk_id = r.hmget(f"device_fk_id_{device_fk_id}", "device_fk_id")
+    if found_device_fk_id[0] is not None:
+        row = list(r.hmget(f"device_fk_id_{device_fk_id}", "device_fk_id", "latitude", "longitude", "time_stamp", "sts",
+                           "speed"))
+        row = [x.decode('utf-8') for x in row]
+        for ele in row:
+            inner_fields.update({inner_field_keys[count]: ele})
+            count+=1
+
+        final.update({f"location_details": inner_fields})
+
+    return final
+
+
+def get_recent_location_time_redis(device_fk_id):
+    inner_fields = dict()
+    final = dict()
+    count = 0
+    inner_field_keys = ["device_fk_id","latitude","longitude","time_stamp","sts","speed"]
+
+    found_device_fk_id = r.hmget(f"device_fk_id_{device_fk_id}", "device_fk_id")
+    if found_device_fk_id[0] is not None:
+        row = list(r.hmget(f"device_fk_id_{device_fk_id}", "device_fk_id", "latitude", "longitude", "time_stamp", "sts",
+                           "speed"))
+        row = [x.decode('utf-8') for x in row]
+        for ele in row:
+            inner_fields.update({inner_field_keys[count]: ele})
+            count+=1
+
+        final.update({f"location_time_details": inner_fields})
+
+    return final
+
+
+@app.route('/device_info')
+def get_device_info():
     # push_recent_data_to_redis()
     args = request.args
-    return get_recent_data_redis(args.get('device_fk_id'))
+    return get_recent_device_redis(args.get('device_fk_id'))
+
+@app.route('/location_info')
+def get_location_info():
+    # push_recent_data_to_redis()
+    args = request.args
+    return get_recent_location_redis(args.get('device_fk_id'))
+
+@app.route('/location_time_info')
+def get_location_time_info():
+    # push_recent_data_to_redis()
+    args = request.args
+    return get_recent_location_time_redis(args.get('device_fk_id'))
 
 if __name__ == '__main__':
     app.run()  # run our Flask app
